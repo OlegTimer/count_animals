@@ -1,0 +1,501 @@
+package com.olegtimermanis.count_animals2;
+//Code and design by Oleg Timermanis
+import android.annotation.SuppressLint;
+
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.graphics.Color;
+import android.os.Bundle;
+import android.os.Handler;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.ImageView;
+import android.widget.TextView;
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.widget.Toast;
+
+
+import com.olegtimermanis.count_animals.R;
+
+import java.util.ArrayList;
+
+/**
+ * An example full-screen activity that shows and hides the system UI (i.e.
+ * status bar and navigation/system bar) with user interaction.
+ */
+public class FullscreenActivity extends AppCompatActivity {
+    private int mCounter;
+    private TextView mInfoTextView;
+    String lefttext = "COUNT";
+    int quant = 0;
+    int answer = 0;
+    int finc = 0;
+    int sizefield = 12;
+    ArrayList<Integer> list = new ArrayList<>();
+    int listnum = 0;
+
+    int animsort = 0;
+
+    // file pref
+    public static final String APP_PREFERENCES = "mysettings";
+    public static final String APP_PREFERENCES_COUNTER = "counter";
+    private SharedPreferences mSettings;
+
+
+    /**
+     * Whether or not the system UI should be auto-hidden after
+     * {@link #AUTO_HIDE_DELAY_MILLIS} milliseconds.
+     */
+    private static final boolean AUTO_HIDE = true;
+
+    /**
+     * If {@link #AUTO_HIDE} is set, the number of milliseconds to wait after
+     * user interaction before hiding the system UI.
+     */
+    private static final int AUTO_HIDE_DELAY_MILLIS = 310;
+
+    /**
+     * Some older devices needs a small delay between UI widget updates
+     * and a change of the status and navigation bar.
+     */
+    private static final int UI_ANIMATION_DELAY = 300;
+    private final Handler mHideHandler = new Handler();
+    private View mContentView;
+    private final Runnable mHidePart2Runnable = new Runnable() {
+        @SuppressLint("InlinedApi")
+        @Override
+        public void run() {
+            // Delayed removal of status and navigation bar
+
+            // Note that some of these constants are new as of API 16 (Jelly Bean)
+            // and API 19 (KitKat). It is safe to use them, as they are inlined
+            // at compile-time and do nothing on earlier devices.
+            mContentView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION);
+        }
+    };
+    private View mControlsView;
+    private final Runnable mShowPart2Runnable = new Runnable() {
+        @Override
+        public void run() {
+            // Delayed display of UI elements
+            ActionBar actionBar = getSupportActionBar();
+            if (actionBar != null) {
+                actionBar.show();
+            }
+            mControlsView.setVisibility(View.VISIBLE);
+        }
+    };
+    private boolean mVisible;
+    private final Runnable mHideRunnable = new Runnable() {
+        @Override
+        public void run() {
+            hide();
+        }
+    };
+    /**
+     * Touch listener to use for in-layout UI controls to delay hiding the
+     * system UI. This is to prevent the jarring behavior of controls going away
+     * while interacting with activity UI.
+     */
+    private final View.OnTouchListener mDelayHideTouchListener = new View.OnTouchListener() {
+        @Override
+        public boolean onTouch(View view, MotionEvent motionEvent) {
+            switch (motionEvent.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    if (AUTO_HIDE) {
+                        delayedHide(AUTO_HIDE_DELAY_MILLIS);
+                    }
+                    break;
+                case MotionEvent.ACTION_UP:
+                    view.performClick();
+                    break;
+                default:
+                    break;
+            }
+            return false;
+        }
+    };
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+
+
+        setContentView(R.layout.activity_fullscreen);
+
+
+
+        mVisible = true;
+        mControlsView = findViewById(R.id.fullscreen_content_controls);
+        mContentView = findViewById(R.id.fullscreen_content);
+//
+        mSettings = getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE);
+        mInfoTextView = (TextView) findViewById(R.id.textViewInfo);
+
+        int a = 1;
+        int b = 10;
+         quant = a + (int) (Math.random() * b);
+
+        View bz = findViewById(R.id.buttonfin);
+        bz.setVisibility(View.GONE);
+        draw();
+    }
+
+    @Override
+    protected void onPostCreate(Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+
+        // Trigger the initial hide() shortly after the activity has been
+        // created, to briefly hint to the user that UI controls
+        // are available.
+        delayedHide(100);
+    }
+
+    private void toggle() {
+        if (mVisible) {
+            hide();
+        } else {
+            show();
+        }
+    }
+
+    private void hide() {
+        // Hide UI first
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.hide();
+        }
+        mControlsView.setVisibility(View.GONE);
+        mVisible = false;
+
+        // Schedule a runnable to remove the status and navigation bar after a delay
+        mHideHandler.removeCallbacks(mShowPart2Runnable);
+        mHideHandler.postDelayed(mHidePart2Runnable, UI_ANIMATION_DELAY);
+    }
+
+    private void show() {
+        // Show the system bar
+        mContentView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+        mVisible = true;
+
+        // Schedule a runnable to display UI elements after a delay
+        mHideHandler.removeCallbacks(mHidePart2Runnable);
+        mHideHandler.postDelayed(mShowPart2Runnable, UI_ANIMATION_DELAY);
+    }
+
+    /**
+     * Schedules a call to hide() in delay milliseconds, canceling any
+     * previously scheduled calls.
+     */
+    private void delayedHide(int delayMillis) {
+        mHideHandler.removeCallbacks(mHideRunnable);
+        mHideHandler.postDelayed(mHideRunnable, delayMillis);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (mSettings.contains(APP_PREFERENCES_COUNTER)) {
+            // read data
+            mCounter = mSettings.getInt(APP_PREFERENCES_COUNTER, 0);
+            // show data
+            mInfoTextView.setText("" + mCounter + "");
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // save data
+        SharedPreferences.Editor editor = mSettings.edit();
+        editor.putInt(APP_PREFERENCES_COUNTER, mCounter);
+        editor.apply();
+    }
+
+    public void onClick1(View view) {
+   answer = 1;
+        an();
+    }
+
+    public void onClick2(View view) {
+        answer = 2;
+        an();
+    }
+
+    public void onClick3(View view) {
+        answer = 3;
+        an();
+    }
+
+    public void onClick4(View view) {
+        answer = 4;
+        an();
+    }
+    public void onClick5(View view) {
+        answer = 5;
+        an();
+    }
+    public void onClick6(View view) {
+        answer = 6;
+        an();
+    }
+    public void onClick7(View view) {
+        answer = 7;
+        an();
+    }
+    public void onClick8(View view) {
+        answer = 8;
+        an();
+    }
+    public void onClick9(View view) {
+        answer = 9;
+        an();
+    }
+    public void onClick10(View view) {
+        answer = 10;
+        an();
+    }
+
+    public void onClickfin(View view) {
+
+        View bz = findViewById(R.id.buttonfin);
+        bz.setVisibility(View.GONE);
+        finc = 0;
+        fin();
+
+    }
+
+    public void an() {
+        TextView z1 = findViewById(R.id.textansw);
+        TextView z2 = findViewById(R.id.textquan);
+        TextView helloTextView = findViewById(R.id.textView);
+        TextView textViewInfo = findViewById(R.id.textViewInfo);
+
+        if (quant == answer){
+            mCounter++;
+            lefttext = "Right";
+            z1.setTextColor(Color.GREEN);
+            helloTextView.setTextColor(Color.GREEN);
+        }
+        else{
+            lefttext = "Wrong";
+            z1.setTextColor(Color.RED);
+            helloTextView.setTextColor(Color.RED);
+        }
+
+
+        textViewInfo.invalidate();
+        helloTextView.invalidate();
+        z1.invalidate();
+        z2.invalidate();
+
+        z1.setText("" + answer + "");
+        z2.setText("" + quant + "       NEW_GAME");
+        helloTextView.setText(lefttext);
+        mInfoTextView.setText("" + mCounter + "");
+finc++;
+        View bz = findViewById(R.id.buttonfin);
+        bz.setVisibility(View.VISIBLE);
+    }
+
+    public void fin() {
+        int a1 = 1;
+        int b1 = 10;
+        quant = a1 + (int) (Math.random() * b1);
+
+        TextView z1 = findViewById(R.id.textansw);
+        TextView z2 = findViewById(R.id.textquan);
+        TextView helloTextView = findViewById(R.id.textView);
+        TextView textViewInfo = findViewById(R.id.textViewInfo);
+
+        textViewInfo.invalidate();
+        helloTextView.invalidate();
+        z1.invalidate();
+        z2.invalidate();
+
+        z1.setTextColor(Color.BLUE);
+        helloTextView.setTextColor(Color.BLUE);
+
+        z1.setText("_?");
+        z2.setText("_?");
+        helloTextView.setText("COUNT");
+        mInfoTextView.setText("" + mCounter + "");
+
+        draw();
+    }
+
+    public void draw()  {
+        //gen arrlist with data
+        list.clear();
+
+        for (int i = 0; i <= sizefield+1; i++)//plus 1 for icon
+        {
+            list.add(0);
+        }
+
+        int a3 = 1;
+        int b3 = 10;
+         animsort = a3 + (int) (Math.random() * b3); //choose random animal
+        list.set(0, animsort);
+
+        int qcount= quant;  //set quant animal in random cells start
+       while ( qcount > 0){
+           int a4 = 1;
+           int b4 = 12;
+           int qz = a4 + (int) (Math.random() * b4);
+
+           if (list.get(qz) == 0) {
+               list.set(qz, animsort);
+               qcount--;
+           }
+        }//set quant animal in random cells end
+
+        int qcount2= sizefield- quant;  //set other animal in random cells start
+        while ( qcount2 > 0){
+            int a5 = 1;
+            int b5 = 12;
+            int qz2 = a5 + (int) (Math.random() * b5);
+
+            if (list.get(qz2) == 0) {
+                int a6 = 1;
+                int b6 = 10;
+            int    animsort2 = a6 + (int) (Math.random() * b6);
+
+                if (animsort2 == animsort && animsort2 == 10){
+                    animsort2 =1;
+                }
+
+            if (animsort2 == animsort){
+                animsort2++;
+            }
+                list.set(qz2, animsort2);
+                qcount2--;
+            }
+        }//set other animal in random cells end
+
+//draw
+        ImageView imageView13 = findViewById(R.id.icon);
+        drawcell(imageView13);
+        imageView13.invalidate();
+        //
+
+        ImageView imageView = findViewById(R.id.imageView1);
+        drawcell(imageView);
+        imageView.invalidate();
+
+        ImageView imageView2 = findViewById(R.id.imageView2);
+        drawcell(imageView2);
+        imageView2.invalidate();
+
+        ImageView imageView3 = findViewById(R.id.imageView3);
+        drawcell(imageView3);
+        imageView3.invalidate();
+
+        ImageView imageView4 = findViewById(R.id.imageView4);
+        drawcell(imageView4);
+        imageView4.invalidate();
+
+        ImageView imageView5 = findViewById(R.id.imageView5);
+        drawcell(imageView5);
+        imageView5.invalidate();
+
+        ImageView imageView6 = findViewById(R.id.imageView6);
+        drawcell(imageView6);
+        imageView6.invalidate();
+
+
+        ImageView imageView7 = findViewById(R.id.imageView7);
+        drawcell(imageView7);
+        imageView7.invalidate();
+
+        ImageView imageView8 = findViewById(R.id.imageView8);
+        drawcell(imageView8);
+        imageView8.invalidate();
+
+     ImageView imageView9 = findViewById(R.id.imageView9);
+        drawcell(imageView9);
+        imageView9.invalidate();
+
+    ImageView imageView10 = findViewById(R.id.imageView10);
+        drawcell(imageView10);
+        imageView10.invalidate();
+
+        ImageView imageView11 = findViewById(R.id.imageView11);
+        drawcell(imageView11);
+        imageView11.invalidate();
+
+        ImageView imageView12 = findViewById(R.id.imageView12);
+        drawcell(imageView12);
+        imageView12.invalidate();
+
+        listnum = 0;
+    }
+
+    public void drawcell(ImageView imageView)  {
+if (list.get(listnum) ==0) {
+   imageView.setImageResource(R.drawable.zero);
+}
+
+        if (list.get(listnum) ==1) {
+            imageView.setImageResource(R.drawable.cat);
+        }
+
+        if (list.get(listnum) ==2) {
+            imageView.setImageResource(R.drawable.dog);
+        }
+
+        if (list.get(listnum) ==3) {
+            imageView.setImageResource(R.drawable.fox);
+        }
+
+        if (list.get(listnum) ==4) {
+            imageView.setImageResource(R.drawable.pony);
+        }
+
+        if (list.get(listnum) ==5) {
+     imageView.setImageResource(R.drawable.rabbit);
+        }
+
+        if (list.get(listnum) ==6) {
+            imageView.setImageResource(R.drawable.chicken);
+        }
+
+        if (list.get(listnum) ==7) {
+            imageView.setImageResource(R.drawable.cow);
+        }
+
+        if (list.get(listnum) ==8) {
+            imageView.setImageResource(R.drawable.duck);
+        }
+
+        if (list.get(listnum) ==9) {
+            imageView.setImageResource(R.drawable.goat);
+        }
+
+        if (list.get(listnum) ==10) {
+            imageView.setImageResource(R.drawable.pig);
+        }
+        //
+        listnum++;
+    }
+
+    public void ClickCred(View view) {
+        Toast.makeText(this, "_Code and design by Oleg Timermanis\n" +
+                "_***_\n" +
+                "_Save score code adapted from version by Alexander Klimov from alexanderklimov.ru\n" +
+                "_Images by No-longer-here, OpenClipart-Vectors, gautruc_hoangmai, nekomachines, riasan,  Chris-ESL,  Hans Braxmeier,  harshal07 from Pixabay\n" +
+                "_***_\n" +
+                "Creative Commons Attribution Share Alike (CC-BY-SA)\n" +
+                "_Free to use if credited\n", Toast.LENGTH_SHORT).show();
+    }
+}
